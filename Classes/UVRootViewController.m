@@ -22,7 +22,9 @@
 #import "UVContactViewController.h"
 #import "UVBabayaga.h"
 
-@implementation UVRootViewController
+@implementation UVRootViewController {
+    UIView *loading;
+}
 
 - (id)initWithViewToLoad:(NSString *)theViewToLoad {
     if (self = [super init]) {
@@ -54,7 +56,7 @@
             next = [UVPostIdeaViewController new];
         else if ([_viewToLoad isEqualToString:@"new_ticket"])
             next = [UVContactViewController new];
-
+        
         next.firstController = YES;
         [self.navigationController pushViewController:next animated:NO];
     }
@@ -65,17 +67,17 @@
 
 - (void)loadView {
     [super loadView];
-
+    
     self.navigationItem.title = NSLocalizedStringFromTableInBundle(@"Feedback & Support", @"UserVoice", [UserVoice bundle], nil);
     self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:NSLocalizedStringFromTableInBundle(@"Close", @"UserVoice", [UserVoice bundle], nil)
                                                                              style:UIBarButtonItemStylePlain
                                                                             target:self
                                                                             action:@selector(dismiss)];
-
+    
     self.view = [[UIView alloc] initWithFrame:[self contentFrame]];
     self.view.backgroundColor = [UVStyleSheet instance].loadingViewBackgroundColor;
-
-    UIView *loading = [[UIView alloc] initWithFrame:CGRectMake(0, 120, self.view.bounds.size.width, 100)];
+    
+    loading = [[UIView alloc] initWithFrame:CGRectMake(0, 120, self.view.bounds.size.width, 100)];
     loading.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin|UIViewAutoresizingFlexibleRightMargin|UIViewAutoresizingFlexibleBottomMargin|UIViewAutoresizingFlexibleTopMargin;
     UIActivityIndicatorView *activity = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleWhiteLarge];
     if ([activity respondsToSelector:@selector(setColor:)]) {
@@ -83,6 +85,7 @@
     } else {
         activity = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray];
     }
+    activity.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin|UIViewAutoresizingFlexibleRightMargin|UIViewAutoresizingFlexibleBottomMargin|UIViewAutoresizingFlexibleTopMargin;
     activity.center = CGPointMake(loading.bounds.size.width/2, 40);
     [loading addSubview:activity];
     [activity startAnimating];
@@ -93,15 +96,32 @@
     label.textAlignment = NSTextAlignmentCenter;
     label.text = NSLocalizedStringFromTableInBundle(@"Loading...", @"UserVoice", [UserVoice bundle], nil);
     [label sizeToFit];
+    label.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin|UIViewAutoresizingFlexibleRightMargin|UIViewAutoresizingFlexibleBottomMargin|UIViewAutoresizingFlexibleTopMargin;
     label.center = CGPointMake(loading.bounds.size.width/2, 85);
     [loading addSubview:label];
     [loading sizeToFit];
+    
+    [self.view addObserver:self forKeyPath:@"frame" options:NSKeyValueObservingOptionNew | NSKeyValueObservingOptionOld context:NULL];
+    
     [self.view addSubview:loading];
 }
 
 - (void)viewDidAppear:(BOOL)animated {
     [super viewDidAppear:animated];
     _loader = [UVInitialLoadManager loadWithDelegate:self action:@selector(pushNextView)];
+}
+
+- (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context
+{
+    CGRect superviewRect = ((UIView *)object).frame;
+    CGRect loadingViewRect = loading.frame;
+    loadingViewRect.origin.x = (CGRectGetWidth(superviewRect) - CGRectGetWidth(loadingViewRect)) / 2.0;
+    loading.frame = loadingViewRect;
+}
+
+- (void)dealloc
+{
+    [self.view removeObserver:self forKeyPath:@"frame"];
 }
 
 @end
